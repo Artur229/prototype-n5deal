@@ -1,0 +1,19 @@
+node_modules/
+.pnpm-store/
+.next/
+out/
+.env
+.env*.local
+*.tsbuildinfo
+.vercel/
+coverage/
+*.log
+
+# Generated agent/tooling files
+AGENTS.md
+CLAUDE.md
+.codex/
+
+# Local Prisma artifacts
+prisma/*.db
+prisma/*.db-journal

@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  BUYER
+  SELLER
+  MANAGER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum AssetStatus {
+  DRAFT
+  ACTIVE
+  SOLD
+  SUSPENDED
+}
+
+enum InquiryStatus {
+  NEW
+  READ
+  CLOSED
+}
+
+model User {
+  id                String        @id @default(cuid())
+  authUserId        String?       @unique @db.Uuid
+  email             String        @unique @db.VarChar(320)
+  name              String        @db.VarChar(160)
+  company           String?       @db.VarChar(200)
+  country           String        @db.VarChar(2)
+  role              UserRole
+  status            UserStatus    @default(ACTIVE)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  buyerProfile      BuyerProfile?
+  assets            Asset[]       @relation("SellerAssets")
+  sentInquiries     Inquiry[]     @relation("SentInquiries")
+  receivedInquiries Inquiry[]     @relation("ReceivedInquiries")
+
+  @@index([role])
+  @@index([status])
+  @@index([country])
+}
+
+model BuyerProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  bio                 String?  @db.Text
+  minBudget           Decimal? @db.Decimal(18, 2)
+  maxBudget           Decimal? @db.Decimal(18, 2)
+  preferredCountries  String[] @default([])
+  preferredIndustries String[] @default([])
+  preferredAssetTypes String[] @default([])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Asset {
+  id             String      @id @default(cuid())
+  sellerId       String
+  title          String      @db.VarChar(240)
+  description    String      @db.Text
+  askingPrice    Decimal?    @db.Decimal(18, 2)
+  currency       String      @db.VarChar(3)
+  country        String      @db.VarChar(2)
+  businessType   String      @db.VarChar(120)
+  assetType      String      @db.VarChar(120)
+  licenseType    String?     @db.VarChar(160)
+  regulator      String?     @db.VarChar(160)
+  businessStatus String?     @db.VarChar(120)
+  employees      Int?
+  foundedYear    Int?
+  annualRevenue  Decimal?    @db.Decimal(18, 2)
+  benefits       String[]    @default([])
+  status         AssetStatus @default(DRAFT)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  seller         User        @relation("SellerAssets", fields: [sellerId], references: [id], onDelete: Restrict)
+  inquiries      Inquiry[]
+
+  @@index([sellerId])
+  @@index([status])
+  @@index([country])
+  @@index([businessType])
+  @@index([askingPrice])
+}
+
+model Inquiry {
+  id         String        @id @default(cuid())
+  senderId   String
+  receiverId String
+  assetId    String?
+  message    String        @db.Text
+  status     InquiryStatus @default(NEW)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  sender     User          @relation("SentInquiries", fields: [senderId], references: [id], onDelete: Restrict)
+  receiver   User          @relation("ReceivedInquiries", fields: [receiverId], references: [id], onDelete: Restrict)
+  asset      Asset?        @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([assetId])
+  @@index([status])
+}
