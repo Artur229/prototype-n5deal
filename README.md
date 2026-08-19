@@ -10,8 +10,7 @@ N5Deal is a prototype European M&A and financial-asset marketplace inspired by t
 
 ## Live Demo
 
-Not deployed yet. Follow the Vercel steps below for deployment.
-
+https://prototype-n5deal.vercel.app/login
 ## Demo Accounts
 
 The seed creates application users for these demo roles:
