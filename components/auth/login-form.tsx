@@ -63,10 +63,15 @@ export function LoginForm({ initialError }: { initialError?: string }) {
     setError(undefined);
     setDemoRole(role);
 
-    const result = await demoLogin(role);
+    try {
+      const result = await demoLogin(role);
 
-    if (result?.error) {
-      setError(result.error);
+      if (result?.error) {
+        setError(result.error);
+        setDemoRole(null);
+      }
+    } catch {
+      setError("Demo sign-in is temporarily unavailable. Please try again.");
       setDemoRole(null);
     }
   }
