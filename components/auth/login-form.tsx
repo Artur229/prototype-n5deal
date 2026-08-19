@@ -3,15 +3,16 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { demoLogin } from "@/actions/demo-login";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 
 const demoAccounts = [
-  { label: "Demo Buyer", email: "ana.novak@northstarcapital.eu" },
-  { label: "Demo Seller", email: "martin.hughes@finwave.co.uk" },
-  { label: "Demo Manager", email: "manager@n5deal.eu" },
+  { label: "Demo Buyer", role: "BUYER" as const },
+  { label: "Demo Seller", role: "SELLER" as const },
+  { label: "Demo Manager", role: "MANAGER" as const },
 ];
 
 function getErrorMessage(error?: string) {
@@ -34,13 +35,13 @@ export function LoginForm({ initialError }: { initialError?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(getErrorMessage(initialError));
-  const [demoMessage, setDemoMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [demoRole, setDemoRole] = useState<(typeof demoAccounts)[number]["role"] | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(undefined);
-    setDemoMessage("");
+    setDemoRole(null);
     setIsLoading(true);
 
     const supabase = createClient();
@@ -58,11 +59,16 @@ export function LoginForm({ initialError }: { initialError?: string }) {
     router.push("/auth/redirect");
   }
 
-  function selectDemoAccount(account: (typeof demoAccounts)[number]) {
-    setEmail(account.email);
-    setPassword("");
+  async function handleDemoLogin(role: (typeof demoAccounts)[number]["role"]) {
     setError(undefined);
-    setDemoMessage("Enter the password configured for this Supabase demo account.");
+    setDemoRole(role);
+
+    const result = await demoLogin(role);
+
+    if (result?.error) {
+      setError(result.error);
+      setDemoRole(null);
+    }
   }
 
   return (
@@ -81,8 +87,7 @@ export function LoginForm({ initialError }: { initialError?: string }) {
             <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
           </div>
           {error ? <p className="text-sm text-red-600" role="alert">{error}</p> : null}
-          {demoMessage ? <p className="text-sm text-muted-foreground">{demoMessage}</p> : null}
-          <Button className="w-full" disabled={isLoading} type="submit">
+          <Button className="w-full" disabled={isLoading || demoRole !== null} type="submit">
             {isLoading ? "Signing in…" : "Sign In"}
           </Button>
         </form>
@@ -91,8 +96,15 @@ export function LoginForm({ initialError }: { initialError?: string }) {
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Demo accounts</p>
           <div className="flex flex-wrap gap-2">
             {demoAccounts.map((account) => (
-              <Button key={account.email} size="sm" type="button" variant="outline" onClick={() => selectDemoAccount(account)}>
-                {account.label}
+              <Button
+                key={account.role}
+                size="sm"
+                type="button"
+                variant="outline"
+                disabled={isLoading || demoRole !== null}
+                onClick={() => handleDemoLogin(account.role)}
+              >
+                {demoRole === account.role ? "Signing in…" : account.label}
               </Button>
             ))}
           </div>
